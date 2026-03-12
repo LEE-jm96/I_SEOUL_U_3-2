@@ -1,68 +1,120 @@
-import { Product, Coupon } from '../../../types';
-
-export interface ProductWithUI extends Product {
-  description?: string;
-  isRecommended?: boolean;
-}
+import { useState, useCallback } from 'react';
+import { Coupon } from '../../../types';
+import type { ProductWithUI } from '../../constants';
+import { formatPriceDisplay } from '../../utils/formatters';
 
 export interface AdminProps {
   products: ProductWithUI[];
+  setProducts: React.Dispatch<React.SetStateAction<ProductWithUI[]>>;
   coupons: Coupon[];
-  activeTab: 'products' | 'coupons';
-  setActiveTab: (tab: 'products' | 'coupons') => void;
-  productForm: {
-    name: string;
-    price: number;
-    stock: number;
-    description: string;
-    discounts: Array<{ quantity: number; rate: number }>;
-  };
-  setProductForm: React.Dispatch<React.SetStateAction<AdminProps['productForm']>>;
-  editingProduct: string | null;
-  setEditingProduct: (id: string | null) => void;
-  showProductForm: boolean;
-  setShowProductForm: (show: boolean) => void;
-  couponForm: {
-    name: string;
-    code: string;
-    discountType: 'amount' | 'percentage';
-    discountValue: number;
-  };
-  setCouponForm: React.Dispatch<React.SetStateAction<AdminProps['couponForm']>>;
-  showCouponForm: boolean;
-  setShowCouponForm: (show: boolean) => void;
-  formatPrice: (price: number, productId?: string) => string;
+  setCoupons: React.Dispatch<React.SetStateAction<Coupon[]>>;
   addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
-  startEditProduct: (product: ProductWithUI) => void;
-  deleteProduct: (productId: string) => void;
-  handleProductSubmit: (e: React.FormEvent) => void;
-  handleCouponSubmit: (e: React.FormEvent) => void;
-  deleteCoupon: (couponCode: string) => void;
 }
 
 const Admin = ({
   products,
+  setProducts,
   coupons,
-  activeTab,
-  setActiveTab,
-  productForm,
-  setProductForm,
-  editingProduct,
-  setEditingProduct,
-  showProductForm,
-  setShowProductForm,
-  couponForm,
-  setCouponForm,
-  showCouponForm,
-  setShowCouponForm,
-  formatPrice,
+  setCoupons,
   addNotification,
-  startEditProduct,
-  deleteProduct,
-  handleProductSubmit,
-  handleCouponSubmit,
-  deleteCoupon,
 }: AdminProps) => {
+  const [activeTab, setActiveTab] = useState<'products' | 'coupons'>('products');
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [productForm, setProductForm] = useState({
+    name: '',
+    price: 0,
+    stock: 0,
+    description: '',
+    discounts: [] as Array<{ quantity: number; rate: number }>,
+  });
+
+  const [showCouponForm, setShowCouponForm] = useState(false);
+  const [couponForm, setCouponForm] = useState({
+    name: '',
+    code: '',
+    discountType: 'amount' as 'amount' | 'percentage',
+    discountValue: 0,
+  });
+
+  const handleProductSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingProduct && editingProduct !== 'new') {
+      updateProduct(editingProduct, productForm);
+      setEditingProduct(null);
+    } else {
+      addProduct({
+        ...productForm,
+        discounts: productForm.discounts,
+      });
+    }
+    setProductForm({ name: '', price: 0, stock: 0, description: '', discounts: [] });
+    setEditingProduct(null);
+    setShowProductForm(false);
+  };
+
+  const handleCouponSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    addCoupon(couponForm);
+    setCouponForm({
+      name: '',
+      code: '',
+      discountType: 'amount',
+      discountValue: 0,
+    });
+    setShowCouponForm(false);
+  };
+
+  const startEditProduct = (product: ProductWithUI) => {
+    setEditingProduct(product.id);
+    setProductForm({
+      name: product.name,
+      price: product.price,
+      stock: product.stock,
+      description: product.description || '',
+      discounts: product.discounts || [],
+    });
+    setShowProductForm(true);
+  };
+
+  const addProduct = useCallback((newProduct: Omit<ProductWithUI, 'id'>) => {
+    const product: ProductWithUI = {
+      ...newProduct,
+      id: `p${Date.now()}`,
+    };
+    setProducts(prev => [...prev, product]);
+    addNotification('상품이 추가되었습니다.', 'success');
+  }, [setProducts, addNotification]);
+
+  const updateProduct = useCallback((productId: string, updates: Partial<ProductWithUI>) => {
+    setProducts(prev =>
+      prev.map(product =>
+        product.id === productId ? { ...product, ...updates } : product
+      )
+    );
+    addNotification('상품이 수정되었습니다.', 'success');
+  }, [setProducts, addNotification]);
+
+  const deleteProduct = useCallback((productId: string) => {
+    setProducts(prev => prev.filter(p => p.id !== productId));
+    addNotification('상품이 삭제되었습니다.', 'success');
+  }, [setProducts, addNotification]);
+
+  const addCoupon = useCallback((newCoupon: Coupon) => {
+    const exists = coupons.some(c => c.code === newCoupon.code);
+    if (exists) {
+      addNotification('이미 존재하는 쿠폰 코드입니다.', 'error');
+      return;
+    }
+    setCoupons(prev => [...prev, newCoupon]);
+    addNotification('쿠폰이 추가되었습니다.', 'success');
+  }, [coupons, setCoupons, addNotification]);
+
+  const deleteCoupon = useCallback((couponCode: string) => {
+    setCoupons(prev => prev.filter(c => c.code !== couponCode));
+    addNotification('쿠폰이 삭제되었습니다.', 'success');
+  }, [setCoupons, addNotification]);
+  
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
@@ -125,7 +177,7 @@ const Admin = ({
                 {products.map(product => (
                   <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatPrice(product.price, product.id)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatPriceDisplay(product.price, 'admin')}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.stock > 10 ? 'bg-green-100 text-green-800' :
                         product.stock > 0 ? 'bg-yellow-100 text-yellow-800' :

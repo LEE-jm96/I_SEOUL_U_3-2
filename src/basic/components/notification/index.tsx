@@ -1,12 +1,8 @@
-export interface Noti {
-  id: string;
-  message: string;
-  type: 'error' | 'success' | 'warning';
-}
+import type { Notification as NotificationItem } from '../../../types';
 
 interface NotificationProps {
-  notifications: Noti[];
-  setNotifications: React.Dispatch<React.SetStateAction<Noti[]>>;
+  notifications: NotificationItem[];
+  setNotifications: React.Dispatch<React.SetStateAction<NotificationItem[]>>;
 }
 
 const Notification = ({ notifications, setNotifications }: NotificationProps) => {
