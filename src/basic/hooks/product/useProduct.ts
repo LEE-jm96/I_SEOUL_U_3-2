@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { initialProducts } from '../../constants';
 import type { ProductWithUI } from '../../constants';
 import { useLocalStorage } from '../utility/useLocalStorage';
+import { generateProductId } from '../../utils/idGenerator';
 
 export interface UseProductParams {
   addNotification: (message: string, type?: 'error' | 'success' | 'warning') => void;
@@ -20,7 +21,7 @@ export function useProduct({ addNotification }: UseProductParams) {
     (newProduct: Omit<ProductWithUI, 'id'>) => {
       const product: ProductWithUI = {
         ...newProduct,
-        id: `p${Date.now()}`,
+        id: generateProductId(),
       };
       setProducts((prev) => [...prev, product]);
       addNotification('상품이 추가되었습니다.', 'success');

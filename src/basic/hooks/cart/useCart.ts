@@ -7,6 +7,7 @@ import {
   updateCartItemQuantity,
   getRemainingStock,
 } from '../../models/cart';
+import { generateOrderNumber } from '../../utils/idGenerator';
 
 import { useLocalStorage } from '../utility/useLocalStorage';
 
@@ -82,10 +83,10 @@ export function useCart({ products, addNotification, selectedCoupon, clearSelect
   );
 
   const completeOrder = useCallback(() => {
-    const orderNumber = `ORD-${Date.now()}`;
+    const orderNumber = generateOrderNumber();
     addNotification(`주문이 완료되었습니다. 주문번호: ${orderNumber}`, 'success');
     setCart([]);
-    clearSelectedCoupon?.();
+    clearSelectedCoupon();
   }, [addNotification, setCart, clearSelectedCoupon]);
   return {
     cart,
