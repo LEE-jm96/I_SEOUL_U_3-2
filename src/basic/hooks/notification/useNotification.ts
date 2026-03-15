@@ -2,8 +2,7 @@ import { useState, useCallback } from 'react';
 import type { Notification } from '../../../types';
 
 /**
- * 알림 상태 + 부수 효과(addNotification)를 갖는 비즈니스 로직.
- * utils가 아닌 feature로 두어, 외부 상태 사용·상태 변경을 한 곳에서 관리.
+ * 상태/기능 훅: 알림 도메인. 알림 상태 + addNotification 부수 효과.
  */
 export function useNotification() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
