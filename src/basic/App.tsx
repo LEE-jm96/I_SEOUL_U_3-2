@@ -1,26 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CartItem, Coupon } from '../types';
 import Header from './components/layout/Header';
 import Admin from './components/admin';
 import ProductList from './components/product';
 import NotificationList from './components/notification';
-import { initialProducts, initialCoupons } from './constants';
+import { initialCoupons } from './constants';
 import type { ProductWithUI } from './constants';
 import { formatPriceDisplay } from './utils/formatters';
-import { useNotification } from './features/notification/useNotification';
+import { useNotification } from './hooks/notification';
+import { useProduct } from './hooks/product';
+import { useSearch } from './hooks/utility';
 
 const App = () => {
-  // admin, product 둘 다 사용
-  const [products, setProducts] = useState<ProductWithUI[]>(() => {
-    const saved = localStorage.getItem('products');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return initialProducts;
-      }
-    }
-    return initialProducts;
+  const [searchTerm, setSearchTerm] = useState(''); // header, product 검색 사용
+
+  const { notifications, setNotifications, addNotification } = useNotification();
+
+  const { products, addProduct, updateProduct, deleteProduct } = useProduct({
+    addNotification,
+  });
+
+  const getProductSearchText = useCallback((p: ProductWithUI) => `${p.name} ${p.description ?? ''}`, []);
+  const { debouncedSearchTerm, filteredItems: filteredProducts } = useSearch({
+    items: products,
+    searchTerm,
+    getSearchableText: getProductSearchText,
   });
 
   // product, header 사용
@@ -50,9 +54,6 @@ const App = () => {
   });
 
   const [isAdmin, setIsAdmin] = useState(false); // header, main 분기 사용
-  const [searchTerm, setSearchTerm] = useState(''); // header, product 검색 사용
-
-  const { notifications, setNotifications, addNotification } = useNotification();
 
   const [totalItemCount, setTotalItemCount] = useState(0);
 
@@ -61,10 +62,6 @@ const App = () => {
     const count = cart.reduce((sum, item) => sum + item.quantity, 0);
     setTotalItemCount(count);
   }, [cart]);
-
-  useEffect(() => {
-    localStorage.setItem('products', JSON.stringify(products));
-  }, [products]);
 
   useEffect(() => {
     localStorage.setItem('coupons', JSON.stringify(coupons));
@@ -96,7 +93,9 @@ const App = () => {
         {isAdmin ? (
           <Admin
             products={products}
-            setProducts={setProducts}
+            addProduct={addProduct}
+            updateProduct={updateProduct}
+            deleteProduct={deleteProduct}
             coupons={coupons}
             setCoupons={setCoupons}
             addNotification={addNotification}
@@ -104,7 +103,8 @@ const App = () => {
         ) : (
           <ProductList
             products={products}
-            searchTerm={searchTerm}
+            filteredProducts={filteredProducts}
+            debouncedSearchTerm={debouncedSearchTerm}
             cart={cart}
             setCart={setCart}
             coupons={coupons}
