@@ -96,5 +96,6 @@ export function useCart({ products, addNotification, selectedCoupon, clearSelect
     updateQuantity,
     completeOrder,
     calculateItemTotal: (item: CartItem) => calculateItemTotal(item, cart),
+    totalItemCount: cart.reduce((sum, item) => sum + item.quantity, 0),
   };
 }
