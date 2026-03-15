@@ -46,15 +46,24 @@ const Cart = ({
           </div>
         ) : (
           <div className="space-y-3">
-            {cart.map(item => (
-              <CartItem
-                key={item.product.id}
-                item={item}
-                calculateItemTotal={calculateItemTotal}
-                updateQuantity={updateQuantity}
-                removeFromCart={removeFromCart}
-              />
-            ))}
+            {cart.map(item => {
+              const itemTotal = calculateItemTotal(item);
+              const originalPrice = item.product.price * item.quantity;
+              const discountRate = originalPrice > 0 ? Math.round((1 - itemTotal / originalPrice) * 100) : 0;
+
+              return (
+                <CartItem
+                  key={item.product.id}
+                  id={item.product.id}
+                  name={item.product.name}
+                  quantity={item.quantity}
+                  itemTotal={itemTotal}
+                  discountRate={discountRate}
+                  updateQuantity={updateQuantity}
+                  removeFromCart={removeFromCart}
+                />
+              );
+            })}
           </div>
         )}
       </section>
