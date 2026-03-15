@@ -18,7 +18,17 @@ export function useLocalStorage<T>(
   });
 
   useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(value));
+    if (value === undefined || value === null) {
+      localStorage.removeItem(key);
+      return;
+    }
+
+    const stringifiedValue = JSON.stringify(value);
+    if (stringifiedValue === '[]' || stringifiedValue === '{}' || stringifiedValue === '""') {
+       localStorage.removeItem(key);
+    } else {
+       localStorage.setItem(key, stringifiedValue);
+    }
   }, [key, value]);
 
   return [value, setValue];
